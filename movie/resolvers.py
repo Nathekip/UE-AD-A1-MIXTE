@@ -1,11 +1,11 @@
 import json
 
 def load_movies():
-    with open('{}/databases/movies.json'.format("."), "r") as file:
+    with open('{}/data/movies.json'.format("."), "r") as file:
         return json.load(file)["movies"]
 
 def write_movies(movies):
-    with open('{}/databases/movies.json'.format("."), 'w') as f:
+    with open('{}/data/movies.json'.format("."), 'w') as f:
         json.dump({"movies": movies}, f)
 
 # Query resolvers
@@ -28,9 +28,8 @@ def movie_by_title(_, info, _title):
 
 # Mutation resolvers
 def add_movie(_, info, _id, _title, _director, _rating):
-    movies = load_movies()
-    
-    # Check if movie ID already exists
+    movies = load_movies()    
+
     for movie in movies:
         if str(movie['id']) == str(_id):
             return None

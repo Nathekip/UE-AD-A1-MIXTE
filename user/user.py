@@ -23,7 +23,7 @@ IP = '127.0.0.1'
 PORT = 3004
 HOST = '0.0.0.0'
 
-with open('{}/data/users.json'.format("."), "r") as jsf:
+with open('{}/user/data/users.json'.format("."), "r") as jsf:
    users = json.load(jsf)["users"]
 
 @app.route("/", methods=['GET'])
@@ -64,11 +64,18 @@ def get_movies_byuser(user):
    movies_json = {"movies" : []}
    for movies in response.json()["dates"] :
       for movie in movies["movies"] :
-         jsonQuery = {f"movie_with_id(_id :'{movie}')" : ["director","id","rating","title"]}
-         movie_json = requests.post(f"http://{IP}:{PORT_MOVIE}",json={'query': jsonQuery})
-         #movie_json = requests.get(f"http://{IP}:{PORT_MOVIE}/movies/{movie}")
-         print(response.json())
-         movies_json["movies"].append(movie_json.json())
+         query = f"""
+            query {{
+                movie_by_id(_id: "{movie}") {{
+                    id
+                    title
+                    director
+                    rating
+                }}
+            }}
+            """
+         movie_response = requests.post(f"http://{IP}:{PORT_MOVIE}/graphql", json={'query': query})
+         movies_json["movies"].append(movie_response.json().get('data', {}).get('movie_by_id', {}))
    print("test")
    print(movies_json)
    return make_response(jsonify(movies_json),200)
