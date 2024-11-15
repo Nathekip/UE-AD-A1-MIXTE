@@ -34,6 +34,32 @@ def home():
 def get_json():
     res = make_response(jsonify(users),200)
     return res
+ 
+@app.route("/users", methods=['POST'])
+def add_user():
+    new_user = request.get_json()
+    users.append(new_user)
+    with open('{}/user/data/users.json'.format("."), "w") as jsf:
+        json.dump({"users": users}, jsf, indent=2)
+    return make_response(jsonify(new_user), 201)
+ 
+@app.route("/users/<user_id>", methods=['DELETE'])
+def delete_user(user_id):
+    for user in users:
+        if user["id"] == user_id:
+            users.remove(user)
+            with open('{}/user/data/users.json'.format("."), "w") as jsf:
+                json.dump({"users": users}, jsf, indent=2)
+            return make_response(jsonify({"message": "user deleted"}), 200)
+    return make_response(jsonify({"error": "user not found"}), 404)
+ 
+@app.route("/users/<user_id>/bookings", methods=['POST'])
+def add_booking_for_user(user_id):
+    booking_data = request.get_json()
+    response = requests.post(f"http://{IP}:{PORT_BOOKING}/bookings/{user_id}", json=booking_data)
+    if response.status_code != 200:
+        return make_response({"error": "could not add booking"}, 400)
+    return make_response(response.json(), 200)
 
 @app.route("/users/bookings/<user>",methods=['GET'])
 def get_bookings_byuser(user):
