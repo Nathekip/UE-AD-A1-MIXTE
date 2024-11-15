@@ -1,19 +1,17 @@
 syntax = "proto3";
 
-service Movie {
-    rpc GetMovieByID(MovieID) returns (MovieData) {}
-    rpc GetListMovies(Empty) returns (stream MovieData) {}
+service Showtime {
+    rpc GetShowtimes(Empty) returns (stream ShowtimeData) {}
+    rpc GetShowmovies(Date) returns (ShowtimeData) {}
 }
 
-message MovieID {
-    string id = 1;
+message Date {
+    string date = 1;
 }
 
-message MovieData {
-    string title = 1;
-    float rating = 2;
-    string director = 3;
-    string id = 4;
+message ShowtimeData {
+    string date = 2;
+    repeated string movies = 3;
 }
 
 message Empty {
