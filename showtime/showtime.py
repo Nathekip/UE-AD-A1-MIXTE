@@ -11,12 +11,12 @@ class ShowtimeServicer(showtime_pb2_grpc.ShowtimeServicer):
 
     def GetShowtimes(self, request, context):
         for schedule in self.db:
-            yield showtime_pb2.ShowtimeData(date=schedule.date,movies=schedule.movies)
+            yield showtime_pb2.ShowtimeData(date=schedule["date"],movies=schedule["movies"])
 
     def GetShowmovies(self, request, context):
         for schedule in self.db:
-            if schedule.date == request.date:
-                return showtime_pb2.ShowtimeData(date=schedule.date,movies=schedule.movies)
+            if schedule["date"] == request.date:
+                return showtime_pb2.ShowtimeData(date=schedule["date"],movies=schedule["movies"])
         return showtime_pb2.ShowtimeData(date="",movies=[])
 
 def serve():
