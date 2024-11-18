@@ -25,8 +25,8 @@ def get_showtimes(stub):
     showtimes = stub.GetShowtimes(showtime_pb2.Empty())
     print(showtimes)
 
-def get_showtime_by_date(stub, date):
-    showtime = stub.GetShowmovies(date)
+def get_showtime_by_date(stub, request):
+    showtime = stub.GetShowmovies(request)
     print(showtime)
 
 def run():
@@ -36,7 +36,8 @@ def run():
         get_showtimes(stub)
         print("--------------GetShowtimeByDate--------------")
         date = showtime_pb2.Date(date="20151130")
-        get_showtime_by_date(stub, date)
+        request = {"date":date}
+        get_showtime_by_date(stub, request)
 
 
 if __name__ == '__main__':
