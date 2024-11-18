@@ -23,11 +23,9 @@ import json
 
 def get_showtimes(stub):
     showtimes = stub.GetShowtimes(showtime_pb2.Empty())
-    print(showtimes)
 
 def get_showtime_by_date(stub, date):
     showtime = stub.GetShowmovies(date)
-    print(showtime)
 
 def run():
     with grpc.insecure_channel('localhost:3002') as channel:
