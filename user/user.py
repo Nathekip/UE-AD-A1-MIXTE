@@ -75,11 +75,11 @@ def add_booking_for_user(user_id):
             ]
          return make_response(jsonify({"bookings": bookings}), 200)
    except grpc.RpcError as e:
+      print(e)
       return make_response({"error": "could not add booking"}, 400)
 
 @app.route("/users/bookings/<user>",methods=['GET'])
 def get_bookings_byuser(user):
-   print("test")
    id = -1
    for useri in users :
       if useri["name"] == user or useri["id"] == user :
