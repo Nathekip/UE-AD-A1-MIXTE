@@ -13,7 +13,7 @@ class BookingServicer(booking_pb2_grpc.BookingServicer):
     IP = "127.0.0.1"
 
     def __init__(self):
-        with open('{}/data/bookings.json'.format("."), "r") as jsf:
+        with open('{}/booking/data/bookings.json'.format("."), "r") as jsf:
             self.db = json.load(jsf)["bookings"]
 
     def write_in_database(self):
@@ -38,7 +38,7 @@ class BookingServicer(booking_pb2_grpc.BookingServicer):
     def GetBookingsByUserId(self, request, context):
         for booking in self.db :
             if str(booking["userid"]) == str(request.userid):
-                return showtime_pb2.BookingResponse(
+                return booking_pb2.BookingResponse(
                     userid=booking["userid"],
                     datemovies=booking["dates"])
         return booking_pb2.BookingResponse(
@@ -51,7 +51,9 @@ class BookingServicer(booking_pb2_grpc.BookingServicer):
         date_request = addbooking["date"]
         movie_request = addbooking["movies"]
         try:
-            response = get_showtime_by_date(date_request)
+            with grpc.insecure_channel('localhost:3202') as channel:
+                stub = showtime_pb2_grpc.ShowtimeStub(channel)
+                response = get_showtime_by_date(stub,date_request)
         except grpc.RpcError as e:
             if (e.code() == grpc.StatusCode.NOT_FOUND):
                 return self.create_error(context,userid_request)
@@ -88,20 +90,21 @@ class BookingServicer(booking_pb2_grpc.BookingServicer):
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     booking_pb2_grpc.add_BookingServicer_to_server(BookingServicer(), server)
-    server.add_insecure_port('[::]:3002')
+    server.add_insecure_port('[::]:3102')
     server.start()
     server.wait_for_termination()
 
 
 def get_showtimes(stub):
     showtimes = stub.GetShowtimes(showtime_pb2.Empty())
+    print(showtimes)
 
 def get_showtime_by_date(stub, date):
     showtime = stub.GetShowmovies(date)
     return showtime
 
 def run():
-    with grpc.insecure_channel('localhost:3002') as channel:
+    with grpc.insecure_channel('localhost:3202') as channel:
         stub = showtime_pb2_grpc.ShowtimeStub(channel)
         print("--------------GetShowtimes--------------")
         get_showtimes(stub)
@@ -111,4 +114,5 @@ def run():
 
 
 if __name__ == '__main__':
-    run()
+    #run()
+    serve()
