@@ -17,6 +17,7 @@ class ShowtimeServicer(showtime_pb2_grpc.ShowtimeServicer):
         for schedule in self.db:
             if schedule["date"] == request.date:
                 return showtime_pb2.ShowtimeData(date=schedule["date"],movies=schedule["movies"])
+        context.set_code(grpc.StatusCode.NOT_FOUND)
         return showtime_pb2.ShowtimeData(date="",movies=[])
 
 def serve():
