@@ -1,11 +1,15 @@
 import json
+import os
+
+base_dir = os.path.dirname(os.path.abspath(__file__))
+json_path = os.path.join(base_dir, 'data/movies.json')
 
 def load_movies():
-    with open('{}/data/movies.json'.format("."), "r") as file:
+    with open(json_path, "r") as file:
         return json.load(file)["movies"]
 
 def write_movies(movies):
-    with open('{}/data/movies.json'.format("."), 'w') as f:
+    with open(json_path, 'w') as f:
         json.dump({"movies": movies}, f)
 
 # Query resolvers

@@ -1,0 +1,231 @@
+---
+openapi: 3.0.3
+info:
+  title: User API
+  description: This is the API of the User service
+  contact:
+    email: helene.coullon@imt-atlantique.fr
+  license:
+    name: GPL v3
+    url: https://www.gnu.org/licenses/gpl-3.0.en.html
+  version: 1.0.0
+tags:
+- name: admins
+  description: Secured Admin-only calls
+- name: developers
+  description: Operations available to regular developers
+paths:
+  /:
+    get:
+      tags:
+      - developers
+      summary: home page of the service
+      operationId: home
+      responses:
+        "200":
+          description: welcome message
+          content:
+            text/html:
+              schema:
+                type: string
+                example: <h1>Test</h1>
+    post:
+      tags:
+      - developers
+      summary: add a new user
+      operationId: add_user
+      requestBody:
+        description: User object that needs to be added
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        "201":
+          description: user created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /users/{user_id}:
+    delete:
+      tags:
+      - developers
+      summary: delete a user
+      operationId: delete_user
+      parameters:
+      - name: user_id
+        in: path
+        description: ID of the user to delete
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: user deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: user deleted
+        "404":
+          description: user not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: user not found
+  /users:
+    get:
+      tags:
+      - developers
+      summary: get the full JSON database
+      operationId: get_schedule
+      responses:
+        "200":
+          description: full JSON
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllSchedule'
+  /users/{user_id}/bookings:
+    post:
+      tags:
+      - developers
+      summary: add a booking for a user
+      operationId: add_booking_for_user
+      parameters:
+      - name: user_id
+        in: path
+        description: ID of the user to add a booking for
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Booking object that needs to be added
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Booking'
+      responses:
+        "200":
+          description: booking added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        "400":
+          description: could not add booking
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: could not add booking
+  /users/bookings/{user}:
+    get:
+      tags:
+      - developers
+      summary: get bookings of the user 
+      operationId: get_bookings_byuser
+      parameters:
+      - name: user
+        in: path
+        description: User name or id.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: bookings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+        "400":
+          description: bad input parameter
+  /users/movies/{user}:
+    get:
+      tags:
+      - developers
+      summary: get movies informations from user's bookings
+      operationId: get_movies_byuser
+      parameters:
+      - name: user
+        in: path
+        description: User name or id.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: bookings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+        "400":
+          description: bad input parameter
+components:
+  schemas:
+    AllSchedule:
+      required:
+      - schedule
+      type: object
+      properties:
+        schedule:
+          type: array
+          items:
+            $ref: '#/components/schemas/Schedule'
+    Schedule:
+      required:
+      - date
+      - movies
+      type: object
+      properties:
+        date:
+          type: string
+          example: "20151130"
+        movies:
+          type: array
+          items:
+            type: string
+            example: 720d006c-3a57-4b6a-b18f-9b713b073f3c
+    User:
+      required:
+      - id
+      - name
+      type: object
+      properties:
+        id:
+          type: string
+          example: 12345
+        name:
+          type: string
+          example: John Doe
+    Booking:
+      required:
+      - date
+      - movie_id
+      type: object
+      properties:
+        date:
+          type: string
+          example: "20231130"
+        movie_id:
+          type: string
+          example: 720d006c-3a57-4b6a-b18f-9b713b073f3c

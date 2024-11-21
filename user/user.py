@@ -17,11 +17,11 @@ import booking_pb2_grpc
 
 app = Flask(__name__)
 
-PORT_BOOKING = 3102
-PORT_SHOWTIME = 3202
-PORT_MOVIE = 3200
+PORT_BOOKING = 3302
+PORT_SHOWTIME = 3304
+PORT_MOVIE = 3300
 IP = '127.0.0.1'
-PORT = 3203
+PORT = 3303
 HOST = '0.0.0.0'
 
 with open('{}/user/data/users.json'.format("."), "r") as jsf:
@@ -61,7 +61,7 @@ def add_booking_for_user(user_id):
    movie_request = booking_data["movieid"]
    try:
       AddBooking = booking_pb2.AddBooking(userid=user_id,date=date_request,movies=movie_request)
-      with grpc.insecure_channel('localhost:3102') as channel:
+      with grpc.insecure_channel('localhost:3302') as channel:
          stub = booking_pb2_grpc.BookingStub(channel)
          bookings_reponse = stub.AddBookings(AddBooking)
          if not bookings_reponse.datemovies:
@@ -89,7 +89,7 @@ def get_bookings_byuser(user):
       return make_response(jsonify({"error":"user not found"}), 400)
    try:
       UserID = booking_pb2.UserID(userid=id)
-      with grpc.insecure_channel('localhost:3102') as channel:
+      with grpc.insecure_channel('localhost:3302') as channel:
          stub = booking_pb2_grpc.BookingStub(channel)
          bookings_reponse = stub.GetBookingsByUserId(UserID)
          bookings = [

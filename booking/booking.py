@@ -6,18 +6,22 @@ import showtime_pb2
 import showtime_pb2_grpc
 
 import json
+import os
+
+base_dir = os.path.dirname(os.path.abspath(__file__))
+json_path = os.path.join(base_dir, 'data/bookings.json')
 
 class BookingServicer(booking_pb2_grpc.BookingServicer):
 
-    PORT_SHOWTIME = 3202
+    PORT_SHOWTIME = 3304
     IP = "127.0.0.1"
 
     def __init__(self):
-        with open('{}/booking/data/bookings.json'.format("."), "r") as jsf:
+        with open(json_path, "r") as jsf:
             self.db = json.load(jsf)["bookings"]
 
     def write_in_database(self):
-        with open('{}/booking/data/bookings.json'.format("."), "w") as file:
+        with open(json_path, "w") as file:
             json.dump({"bookings":self.db}, file, indent=2)
 
     def GetBookings(self):
@@ -43,7 +47,7 @@ class BookingServicer(booking_pb2_grpc.BookingServicer):
         movie_request = request.movies
         try:
             # appel à l'api showtime pour vérifier que le film passe bien le jour demandé
-            with grpc.insecure_channel('localhost:3202') as channel:
+            with grpc.insecure_channel('localhost:3304') as channel:
                 stub = showtime_pb2_grpc.ShowtimeStub(channel)
                 response = get_showtime_by_date(stub, date_request)
                 if movie_request not in response.movies:
@@ -96,7 +100,7 @@ class BookingServicer(booking_pb2_grpc.BookingServicer):
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     booking_pb2_grpc.add_BookingServicer_to_server(BookingServicer(), server)
-    server.add_insecure_port('[::]:3102')
+    server.add_insecure_port('[::]:3302')
     server.start()
     server.wait_for_termination()
 
