@@ -58,27 +58,28 @@ def delete_user(user_id):
 def add_booking_for_user(user_id):
    booking_data = request.get_json()
    date_request = booking_data["date"]
-   movie_request = booking_data["movie_id"]
+   movie_request = booking_data["movieid"]
    try:
       AddBooking = booking_pb2.AddBooking(userid=user_id,date=date_request,movies=movie_request)
       with grpc.insecure_channel('localhost:3102') as channel:
          stub = booking_pb2_grpc.BookingStub(channel)
          bookings_reponse = stub.AddBookings(AddBooking)
+         if not bookings_reponse.datemovies:
+            return make_response({"error": "no data found in response"}, 400)
          bookings = [
                 {
                     "date": date_movie.date,
-                    "movies": list(date_movie.movies)  # Convert the repeated field to a Python list
+                    "movies": list(date_movie.movies) 
                 }
                 for date_movie in bookings_reponse.datemovies
             ]
-         print(bookings)
          return make_response(jsonify({"bookings": bookings}), 200)
    except grpc.RpcError as e:
-      print(e) 
       return make_response({"error": "could not add booking"}, 400)
 
 @app.route("/users/bookings/<user>",methods=['GET'])
 def get_bookings_byuser(user):
+   print("test")
    id = -1
    for useri in users :
       if useri["name"] == user or useri["id"] == user :
@@ -94,7 +95,7 @@ def get_bookings_byuser(user):
          bookings = [
                 {
                     "date": date_movie.date,
-                    "movies": list(date_movie.movies)  # Convert the repeated field to a Python list
+                    "movies": list(date_movie.movies)  
                 }
                 for date_movie in bookings_reponse.datemovies
             ]

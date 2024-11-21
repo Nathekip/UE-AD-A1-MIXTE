@@ -20,14 +20,9 @@ class BookingServicer(booking_pb2_grpc.BookingServicer):
         with open('{}/databases/bookings.json'.format("."), "w") as file:
             json.dump({"bookings":self.db}, file, indent=2)
 
-    def create_error(self, context, userid_request):
+    def create_error(self, context):
         context.set_code(grpc.StatusCode.NOT_FOUND)
-        for schedules in self.db:
-            datemovies = []
-            if (schedules["userid"] == userid_request):
-                datemovies = [booking_pb2.DateMovies(date=schedule["date"], movies = schedule["movies"]) for schedule in schedules]
-        return booking_pb2.BookingResponse(userid=userid_request,
-                                            datemovies=datemovies)
+        return booking_pb2.BookingResponse(userid="",datemovies=[])
 
     def GetBookings(self):
         for booking in self.db:
@@ -56,22 +51,22 @@ class BookingServicer(booking_pb2_grpc.BookingServicer):
                 response = get_showtime_by_date(stub,date_request)
         except grpc.RpcError as e:
             if (e.code() == grpc.StatusCode.NOT_FOUND):
-                return self.create_error(context,userid_request)
+                return self.create_error(context)
         if movie_request not in response["movies"]:
-            return self.create_error(context, userid_request)
+            return self.create_error(context)
         for booking in self.db:
             if userid_request == booking["userid"]:
                 for date in booking["dates"]:
                     if str(date["date"]) == str(date_request):
                         for movie in date["movies"]:
                             if movie == movie_request:
-                                return self.create_error(context,userid_request)
+                                return self.create_error(context)
                         date["movies"].append(movie_request)
                         self.write_in_database()
-                        return booking_pb2.ShowtimeData(date=date_request,movies=date["movies"])
+                        return self.create_response(userid_request)
                 booking["dates"].append({"date":date_request,"movies":[movie_request]})
                 self.write_in_database()
-                return booking_pb2.ShowtimeData(date=date_request,movies=[movie_request])
+                return self.create_response(userid_request)
         self.db.append({"userid": userid_request,
                         "dates": [
                         {
@@ -81,7 +76,13 @@ class BookingServicer(booking_pb2_grpc.BookingServicer):
                         ]
                     })
         self.write_in_database()
-        return booking_pb2.ShowtimeData(date=date_request,movies=[movie_request])
+        return self.create_response(userid_request)
+
+    def create_response(self, userid):
+        for booking in self.db:
+            if booking["userid"] == userid:
+                datemovies = [booking_pb2.DateMovies(date=schedule["date"],movies=schedule["movies"]) for schedule in booking]
+        return booking_pb2.BookingResponse(userid=userid,datemovies=datemovies)
 
 
 
