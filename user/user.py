@@ -9,6 +9,7 @@ import grpc
 from concurrent import futures
 import booking_pb2
 import booking_pb2_grpc
+import os
 #import movie_pb2
 #import movie_pb2_grpc
 
@@ -24,7 +25,10 @@ IP = '127.0.0.1'
 PORT = 3303
 HOST = '0.0.0.0'
 
-with open('{}/user/data/users.json'.format("."), "r") as jsf:
+base_dir = os.path.dirname(os.path.abspath(__file__))
+json_path = os.path.join(base_dir, 'data/users.json')
+
+with open(json_path, "r") as jsf:
    users = json.load(jsf)["users"]
 
 @app.route("/", methods=['GET'])
@@ -40,7 +44,7 @@ def get_json():
 def add_user():
     new_user = request.get_json()
     users.append(new_user)
-    with open('{}/user/data/users.json'.format("."), "w") as jsf:
+    with open(json_path, "w") as jsf:
         json.dump({"users": users}, jsf, indent=2)
     return make_response(jsonify(new_user), 201)
  
@@ -49,7 +53,7 @@ def delete_user(user_id):
     for user in users:
         if user["id"] == user_id:
             users.remove(user)
-            with open('{}/user/data/users.json'.format("."), "w") as jsf:
+            with open(json_path, "w") as jsf:
                 json.dump({"users": users}, jsf, indent=2)
             return make_response(jsonify({"message": "user deleted"}), 200)
     return make_response(jsonify({"error": "user not found"}), 404)
@@ -106,36 +110,46 @@ def get_bookings_byuser(user):
       return make_response({"error":"no bookings for this user"}, 400)
    
 
-@app.route("/users/movies/<user>",methods=['GET'])
+@app.route("/users/movies/<user>", methods=['GET'])
 def get_movies_byuser(user):
-   id = -1
-   for useri in users :
-      if useri["name"] == user or useri["id"] == user :
-         id = useri["id"]
-         break
-   if id == -1 :
-      return make_response(jsonify({"error":"user not found"}),400)
-   response = requests.get(f"http://{IP}:{PORT_BOOKING}/bookings/{id}")
-   if response.status_code != 200:
-      return make_response({"error":"no bookings for this user"}, 400)
-   movies_json = {"movies" : []}
-   for movies in response.json()["dates"] :
-      for movie in movies["movies"] :
-         query = f"""
-            query {{
-                movie_by_id(_id: "{movie}") {{
-                    id
-                    title
-                    director
-                    rating
-                }}
-            }}
-            """
-         movie_response = requests.post(f"http://{IP}:{PORT_MOVIE}/graphql", json={'query': query})
-         movies_json["movies"].append(movie_response.json().get('data', {}).get('movie_by_id', {}))
-   print("test")
-   print(movies_json)
-   return make_response(jsonify(movies_json),200)
+    id = -1
+    for useri in users:
+        if useri["name"] == user or useri["id"] == user:
+            id = useri["id"]
+            break
+    if id == -1:
+        return make_response(jsonify({"error": "user not found"}), 400)
+    
+    try:
+        UserID = booking_pb2.UserID(userid=id)
+        with grpc.insecure_channel('localhost:3302') as channel:
+            stub = booking_pb2_grpc.BookingStub(channel)
+            bookings_response = stub.GetBookingsByUserId(UserID)
+            if not bookings_response.datemovies:
+                return make_response({"error": "no bookings for this user"}, 400)
+            
+            movies_json = {"movies": []}
+            for date_movie in bookings_response.datemovies:
+                for movie in date_movie.movies:
+                    query = f"""
+                    query {{
+                        movie_by_id(_id: "{movie}") {{
+                            id
+                            title
+                            director
+                            rating
+                        }}
+                    }}
+                    """
+                    movie_response = requests.post(f"http://{IP}:{PORT_MOVIE}/graphql", json={'query': query})
+                    movie_data = movie_response.json().get('data', {}).get('movie_by_id', {})
+                    if movie_data:
+                        movies_json["movies"].append(movie_data)
+            
+            return make_response(jsonify(movies_json), 200)
+    except grpc.RpcError as e:
+        print(f"Erreur : {e}")
+        return make_response({"error": "could not retrieve bookings"}, 400)
 
 def run():
    print("--------------AddBookings--------------")
