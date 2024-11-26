@@ -10,8 +10,6 @@ from concurrent import futures
 import booking_pb2
 import booking_pb2_grpc
 import os
-#import movie_pb2
-#import movie_pb2_grpc
 
 # CALLING GraphQL requests
 # todo to complete
@@ -33,15 +31,24 @@ with open(json_path, "r") as jsf:
 
 @app.route("/", methods=['GET'])
 def home():
+   """
+   Page d'accueil
+   """
    return "<h1 style='color:blue'>Welcome to the User service!</h1>"
 
 @app.route("/users",methods=['GET'])
 def get_json():
+    """
+    Retourne la liste des utilisateurs
+    """
     res = make_response(jsonify(users),200)
     return res
  
 @app.route("/users", methods=['POST'])
 def add_user():
+    """ 
+    Ajouter un utilisateur
+    """
     new_user = request.get_json()
     users.append(new_user)
     with open(json_path, "w") as jsf:
@@ -50,6 +57,9 @@ def add_user():
  
 @app.route("/users/<user_id>", methods=['DELETE'])
 def delete_user(user_id):
+    """ 
+    Supprimer un utilisateur
+    """
     for user in users:
         if user["id"] == user_id:
             users.remove(user)
@@ -60,13 +70,18 @@ def delete_user(user_id):
  
 @app.route("/users/<user_id>/bookings", methods=['POST'])
 def add_booking_for_user(user_id):
+   """
+   Ajouter une réservation pour un utilisateur
+   """
    booking_data = request.get_json()
    date_request = booking_data["date"]
    movie_request = booking_data["movieid"]
    try:
+      # Requête AddBooking pour le service grpc Booking
       AddBooking = booking_pb2.AddBooking(userid=user_id,date=date_request,movies=movie_request)
       with grpc.insecure_channel('localhost:3302') as channel:
          stub = booking_pb2_grpc.BookingStub(channel)
+         # Appele la méthode AddBookings du service Booking
          bookings_reponse = stub.AddBookings(AddBooking)
          if not bookings_reponse.datemovies:
             return make_response({"error": "no data found in response"}, 400)
@@ -84,6 +99,9 @@ def add_booking_for_user(user_id):
 
 @app.route("/users/bookings/<user>",methods=['GET'])
 def get_bookings_byuser(user):
+   """ 
+   Retourne les réservations d'un utilisateur
+   """
    id = -1
    for useri in users :
       if useri["name"] == user or useri["id"] == user :
@@ -92,9 +110,11 @@ def get_bookings_byuser(user):
    if id == -1 :
       return make_response(jsonify({"error":"user not found"}), 400)
    try:
+      # Requête UserID pour le service grpc Booking
       UserID = booking_pb2.UserID(userid=id)
       with grpc.insecure_channel('localhost:3302') as channel:
          stub = booking_pb2_grpc.BookingStub(channel)
+         # Appele la méthode GetBookingsByUserId de Booking
          bookings_reponse = stub.GetBookingsByUserId(UserID)
          bookings = [
                 {
@@ -112,7 +132,11 @@ def get_bookings_byuser(user):
 
 @app.route("/users/movies/<user>", methods=['GET'])
 def get_movies_byuser(user):
+    """
+    Retourne les films réservés par un utilisateur
+    """
     id = -1
+    # Trouver l'utilisateur par nom ou ID
     for useri in users:
         if useri["name"] == user or useri["id"] == user:
             id = useri["id"]
@@ -121,9 +145,11 @@ def get_movies_byuser(user):
         return make_response(jsonify({"error": "user not found"}), 400)
     
     try:
+        # Requête UserID pour le service grpc Booking
         UserID = booking_pb2.UserID(userid=id)
         with grpc.insecure_channel('localhost:3302') as channel:
             stub = booking_pb2_grpc.BookingStub(channel)
+            # Appele la méthode GetBookingsByUserId de Booking
             bookings_response = stub.GetBookingsByUserId(UserID)
             if not bookings_response.datemovies:
                 return make_response({"error": "no bookings for this user"}, 400)
@@ -131,6 +157,7 @@ def get_movies_byuser(user):
             movies_json = {"movies": []}
             for date_movie in bookings_response.datemovies:
                 for movie in date_movie.movies:
+                    #Construction de la requête GraphQL pour avoir les informations du film
                     query = f"""
                     query {{
                         movie_by_id(_id: "{movie}") {{
@@ -141,6 +168,7 @@ def get_movies_byuser(user):
                         }}
                     }}
                     """
+                    # Envoyer la requête GraphQL au service Movie
                     movie_response = requests.post(f"http://{IP}:{PORT_MOVIE}/graphql", json={'query': query})
                     movie_data = movie_response.json().get('data', {}).get('movie_by_id', {})
                     if movie_data:
